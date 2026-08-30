@@ -147,6 +147,23 @@ e-paper they are actively harmful. Opt in locally where you want one.
 Without a canvas, LVGL falls back to a partial buffer of `partialLines` rows
 and pushes each band over SPI. It works; it is just not free.
 
+**How much does that cost?** Measured on a classic ESP32 (no PSRAM) driving a
+240 × 320 panel at 40 MHz. A framebuffer would have wanted 150 KB, which does
+not fit, so `begin(true)` said so and fell back on its own:
+
+```
+[LB_Display] no room for a 240 x 320 framebuffer (153600 bytes)
+             — drawing direct instead. Enable Tools > PSRAM if your board has it.
+zero-copy framebuffer: NO — partial rendering
+heap after LVGL init: 300896
+```
+
+A full dashboard — anti-aliased arc, 60-point scrolling chart, two bars and a
+header, all updating four times a second — ran smoothly on that, with the heap
+flat at 291 KB. So partial rendering is not a consolation prize at this size;
+you would reach for PSRAM for a bigger panel or a heavier screen, not for this
+one.
+
 ---
 
 ## The vendored LVGL
