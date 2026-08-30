@@ -10,17 +10,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # This library compiles against Lonely Binary Display, which lives in its
-      # own repository. The default GITHUB_TOKEN is scoped to THIS repository
-      # only, so while either repo is private the checkout below fails with
-      # "Not Found" — that is a permissions problem, not a code one.
+      # This library compiles against Lonely Binary Display, which lives in
+      # its own repository. The default GITHUB_TOKEN is scoped to the
+      # repository the workflow runs in, so while that sibling repo is private
+      # a plain checkout comes back "Not Found".
+      #
+      # LB_DISPLAY_DEPLOY_KEY is the private half of a READ-ONLY deploy key
+      # registered on Lonely-Binary/LonelyBinaryDisplay. A deploy key is
+      # narrower than a PAT: one repository, read only, tied to no user
+      # account, and it does not expire. Revoke it at
+      # LonelyBinaryDisplay -> Settings -> Deploy keys.
+      #
+      # Once both repositories are public (Arduino Library Manager only indexes
+      # public ones, so that day is coming) this whole mechanism can go and a
+      # bare actions/checkout will work.
       - name: Check out Lonely Binary Display alongside
         id: dep
         continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: Lonely-Binary/LonelyBinaryDisplay
-          token: ${{ secrets.LB_REPO_TOKEN || github.token }}
+          ssh-key: ${{ secrets.LB_DISPLAY_DEPLOY_KEY }}
           path: .deps/LonelyBinaryDisplay
 
       - name: Explain a failed dependency checkout
@@ -28,17 +38,19 @@ jobs:
         run: |
           echo "::error::Could not check out Lonely-Binary/LonelyBinaryDisplay."
           echo ""
-          echo "The default GITHUB_TOKEN only reaches the repository it runs in,"
-          echo "so a private sibling repo comes back as 'Not Found'. Fix by either:"
+          echo "This job needs to read a private sibling repository, which the"
+          echo "default GITHUB_TOKEN cannot do. Check, in order:"
           echo ""
-          echo "  1. Making both repositories public. They have to be public for"
-          echo "     Arduino Library Manager to index them, so this is the answer"
-          echo "     sooner or later regardless — and it needs no secret."
+          echo "  1. Secret LB_DISPLAY_DEPLOY_KEY exists on THIS repository and"
+          echo "     holds the PRIVATE half of the deploy key (the whole file,"
+          echo "     including the BEGIN/END lines)."
+          echo "  2. The matching PUBLIC half is registered under"
+          echo "     LonelyBinaryDisplay -> Settings -> Deploy keys."
           echo ""
-          echo "  2. Adding a repository secret LB_REPO_TOKEN: a fine-grained PAT"
-          echo "     with Contents:read on Lonely-Binary/LonelyBinaryDisplay."
-          echo "     The workflow already picks it up when present."
+          echo "Or make both repositories public, which removes the need for"
+          echo "any of this and is required for Library Manager anyway."
           exit 1
+
       - uses: arduino/setup-arduino-cli@v2
       - name: Install core and dependencies
         run: |
