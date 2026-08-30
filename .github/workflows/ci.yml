@@ -45,6 +45,27 @@ jobs:
             done
           done
 
+      # Tutorial code says `#include <lvgl.h>`. src/lvgl.h is a shim so that
+      # line resolves to our vendored copy instead of failing, or worse,
+      # dragging in a second LVGL from Library Manager.
+      - name: Tutorial-style "#include <lvgl.h>" resolves to the vendored copy
+        run: |
+          mkdir -p /tmp/ShimCheck
+          cat > /tmp/ShimCheck/ShimCheck.ino <<'EOF'
+          #include <LonelyBinaryDisplay.h>
+          #include <LonelyBinaryLVGL.h>
+          #include <lvgl.h>
+          LB_Display display(LB_TFT_24);
+          void setup() {
+            display.begin();
+            LB_LVGL.begin(display);
+            lv_obj_center(lv_label_create(lv_screen_active()));
+          }
+          void loop() { LB_LVGL.loop(); }
+          EOF
+          arduino-cli compile --fqbn esp32:esp32:esp32s3 \
+            --library . --library .deps/LonelyBinaryDisplay /tmp/ShimCheck
+
       # Nothing under src/lvgl is ours to edit — it is regenerated wholesale by
       # tools/vendor_lvgl.sh. This catches a hand-patch that would be silently
       # lost on the next LVGL bump.

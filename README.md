@@ -75,6 +75,38 @@ before you add networking.
 
 ---
 
+## Do not also install the `lvgl` library
+
+This library **contains** LVGL. Installing the separate `lvgl` library from
+Library Manager gives you two copies, and no build system can link both.
+
+`src/lvgl.h` is a shim so that `#include <lvgl.h>` — what every LVGL tutorial
+tells you to write — resolves to the vendored copy. Tested with the official
+`lvgl` 9.5.0 also installed:
+
+| Your sketch | `lvgl` also installed | Result |
+|---|:--:|---|
+| `<LonelyBinaryLVGL.h>` only | no | works |
+| `<LonelyBinaryLVGL.h>` only | **yes** | works — `lvgl` is not linked in |
+| ours, then `#include <lvgl.h>` | no | works |
+| ours, then `#include <lvgl.h>` | **yes** | works — `lvgl` is not linked in |
+| `#include <lvgl.h>` **first** | no | works |
+| `#include <lvgl.h>` **first** | **yes** | **fails** ⚠️ |
+
+The one broken case is the last: with `<lvgl.h>` on the very first line,
+Arduino resolves it to the separately-installed `lvgl` before this library is
+in play, and that copy has no config of its own:
+
+```
+fatal error: ../../lv_conf.h: No such file or directory
+```
+
+That is LVGL's standard "you never copied lv_conf.h" error. The fix is not to
+copy one — it is to remove the library you do not need: **Library Manager →
+lvgl → Remove**. Or simply put `#include <LonelyBinaryLVGL.h>` above it.
+
+---
+
 ## `LB_Style` — the house look
 
 LVGL's stock theme is gradients, shadows and rounded corners. On a 240 px panel
