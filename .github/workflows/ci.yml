@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  arduino:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out Lonely Binary Display alongside
+        uses: actions/checkout@v4
+        with:
+          repository: Lonely-Binary/LonelyBinaryDisplay
+          path: .deps/LonelyBinaryDisplay
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Install core and dependencies
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls \
+            https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+          arduino-cli lib install "GFX Library for Arduino"
+
+      # The whole point of vendoring LVGL is that no lv_conf.h is copied
+      # anywhere. A CI runner is a clean machine, so if this builds here it
+      # builds on a customer's fresh install too.
+      - name: No stray lv_conf.h on the machine
+        run: |
+          if find ~/Arduino/libraries -maxdepth 1 -name lv_conf.h | grep -q .; then
+            echo "A stray lv_conf.h would invalidate this test"; exit 1
+          fi
+
+      - name: Build examples on both MCUs
+        run: |
+          set -e
+          for fqbn in esp32:esp32:esp32s3 esp32:esp32:esp32; do
+            for ex in examples/*/; do
+              echo "== $fqbn $ex"
+              arduino-cli compile --fqbn "$fqbn" \
+                --library . --library .deps/LonelyBinaryDisplay "$ex"
+            done
+          done
+
+      # Nothing under src/lvgl is ours to edit — it is regenerated wholesale by
+      # tools/vendor_lvgl.sh. This catches a hand-patch that would be silently
+      # lost on the next LVGL bump.
+      - name: Vendored LVGL matches the pinned release
+        run: |
+          PINNED=$(cat src/lvgl/VENDORED_VERSION)
+          ./tools/vendor_lvgl.sh "$PINNED"
+          if ! git diff --quiet -- src/lvgl; then
+            echo "src/lvgl differs from a clean vendoring of $PINNED:"
+            git diff --stat -- src/lvgl
+            exit 1
+          fi
+          echo "src/lvgl is a clean $PINNED"
