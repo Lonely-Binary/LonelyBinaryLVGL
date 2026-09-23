@@ -18,9 +18,8 @@ static void lb_flush_cb(lv_display_t *disp, const lv_area_t *area,
       // screen several times per refresh, hence the is-last check.
       if (lv_display_flush_is_last(disp)) s_display->flush();
     } else {
-      auto *gfx = s_display->gfx();
-      gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)px_map,
-                              lv_area_get_width(area), lv_area_get_height(area));
+      s_display->pushImage(area->x1, area->y1, lv_area_get_width(area),
+                           lv_area_get_height(area), (const uint16_t *)px_map);
     }
   }
   lv_display_flush_ready(disp);
@@ -28,7 +27,7 @@ static void lb_flush_cb(lv_display_t *disp, const lv_area_t *area,
 
 bool LB_LVGL_Class::begin(LB_Display &display, uint16_t partialLines) {
   if (_disp) return true;
-  if (!display.gfx()) {
+  if (!display.begun()) {
     Serial.println(F("[LB_LVGL] call display.begin() before LB_LVGL.begin()."));
     return false;
   }
