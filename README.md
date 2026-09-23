@@ -45,7 +45,7 @@ library and edit nothing.
 ## Install
 
 Library Manager → **Lonely Binary LVGL**. It pulls in *Lonely Binary Display*
-and *GFX Library for Arduino*.
+and *Lonely Binary GFX*.
 
 Then **File ▸ Examples ▸ Lonely Binary LVGL ▸ HelloLVGL**.
 

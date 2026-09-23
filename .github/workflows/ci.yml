@@ -33,6 +33,13 @@ jobs:
           ssh-key: ${{ secrets.LB_DISPLAY_DEPLOY_KEY }}
           path: .deps/LonelyBinaryDisplay
 
+      # Lonely Binary Display draws through Lonely Binary GFX, which is public
+      # but not in the Library Manager index yet, so fetch it the same way.
+      - uses: actions/checkout@v4
+        with:
+          repository: Lonely-Binary/LonelyBinaryGFX
+          path: .deps/LonelyBinaryGFX
+
       - name: Explain a failed dependency checkout
         if: steps.dep.outcome != 'success'
         run: |
@@ -59,7 +66,6 @@ jobs:
             https://espressif.github.io/arduino-esp32/package_esp32_index.json
           arduino-cli core update-index
           arduino-cli core install esp32:esp32
-          arduino-cli lib install "GFX Library for Arduino"
 
       # The whole point of vendoring LVGL is that no lv_conf.h is copied
       # anywhere. A CI runner is a clean machine, so if this builds here it
@@ -77,7 +83,7 @@ jobs:
             for ex in examples/*/; do
               echo "== $fqbn $ex"
               arduino-cli compile --fqbn "$fqbn" \
-                --library . --library .deps/LonelyBinaryDisplay "$ex"
+                --library . --library .deps/LonelyBinaryDisplay --library .deps/LonelyBinaryGFX "$ex"
             done
           done
 
@@ -100,7 +106,7 @@ jobs:
           void loop() { LB_LVGL.loop(); }
           EOF
           arduino-cli compile --fqbn esp32:esp32:esp32s3 \
-            --library . --library .deps/LonelyBinaryDisplay /tmp/ShimCheck
+            --library . --library .deps/LonelyBinaryDisplay --library .deps/LonelyBinaryGFX /tmp/ShimCheck
 
       # Nothing under src/lvgl is ours to edit — it is regenerated wholesale by
       # tools/vendor_lvgl.sh. This catches a hand-patch that would be silently
