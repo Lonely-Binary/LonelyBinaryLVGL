@@ -130,6 +130,17 @@ LB_Style::setLevel(number, LB_Style::LEVEL_WARN); // consistent state colours
 lv_obj_set_style_text_font(number, LB_Style::valueFontFor(tileHeight), 0);
 ```
 
+The same colours are available to the plain drawing API, as Lonely Binary GFX
+colours, so a screen drawn without LVGL matches one drawn with it:
+
+```cpp
+display.fillScreen(LB_Style::palette::bg);
+display.setTextColor(LB_Style::palette::accent);
+```
+
+`LB_Style::palette` is where the colours are defined; the LVGL tokens are
+derived from it. `LB_Style::toLv()` converts any `lb_color_t` for LVGL.
+
 Animations are off in the shared styles by design — they cost redraws, and on
 e-paper they are actively harmful. Opt in locally where you want one.
 

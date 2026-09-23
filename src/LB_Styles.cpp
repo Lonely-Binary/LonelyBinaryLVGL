@@ -7,6 +7,11 @@ lv_style_t card, label, value, unit;
 
 static bool s_ready = false;
 
+lv_color_t toLv(lb_color_t c) {
+  if (lb_color_is_index(c)) c = LB_MAGENTA;
+  return lv_color_hex(c & 0xFFFFFF);
+}
+
 static void applyTokens() {
   lv_style_set_bg_color(&card, surface);
   lv_style_set_border_color(&card, muted);
@@ -22,14 +27,14 @@ void begin() {
   }
   s_ready = true;
 
-  bg      = lv_color_hex(0x0C0F14);
-  surface = lv_color_hex(0x141923);
-  text    = lv_color_hex(0xE6EAF2);
-  muted   = lv_color_hex(0x8A93A6);
-  accent  = lv_color_hex(0x2DD4BF);
-  ok      = lv_color_hex(0x34D27B);
-  warn    = lv_color_hex(0xF6B73C);
-  crit    = lv_color_hex(0xF2705B);
+  bg      = toLv(palette::bg);
+  surface = toLv(palette::surface);
+  text    = toLv(palette::text);
+  muted   = toLv(palette::muted);
+  accent  = toLv(palette::accent);
+  ok      = toLv(palette::ok);
+  warn    = toLv(palette::warn);
+  crit    = toLv(palette::crit);
 
   // Card — flat. No gradient, no shadow, minimal radius. The border is a
   // hairline only so tiles read as separate without drawing attention.
@@ -64,11 +69,10 @@ void begin() {
 }
 
 void useMono(bool blackOnWhite) {
-  const uint32_t fg = blackOnWhite ? 0x000000 : 0xFFFFFF;
-  const uint32_t bk = blackOnWhite ? 0xFFFFFF : 0x000000;
-  bg = surface = lv_color_hex(bk);
-  text = accent = ok = warn = crit = lv_color_hex(fg);
-  muted = lv_color_hex(fg);
+  const lv_color_t fg = toLv(blackOnWhite ? LB_BLACK : LB_WHITE);
+  const lv_color_t bk = toLv(blackOnWhite ? LB_WHITE : LB_BLACK);
+  bg = surface = bk;
+  text = accent = ok = warn = crit = muted = fg;
   applyTokens();
   lv_obj_set_style_bg_color(lv_screen_active(), bg, 0);
 }
