@@ -1,0 +1,7 @@
+wait 300
+shot middle
+press 260 160
+drag 60 160 200
+release
+wait 800
+shot right

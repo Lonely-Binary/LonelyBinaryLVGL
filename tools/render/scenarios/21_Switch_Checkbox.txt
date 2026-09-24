@@ -1,0 +1,6 @@
+# auto schedule on (days grey out), Sa on, fan High
+wait 300
+tap 294 60
+tap 36 140
+tap 176 195
+shot main

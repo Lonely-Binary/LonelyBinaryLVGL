@@ -26,6 +26,9 @@
       and LVGL finds it on the include path. Nothing to copy, nothing to edit.
     • The flush callback, the draw buffers, the tick source and the refresh
       loop — all wired to the panel you already chose with LB_Display.
+    • Touch. On a touch panel (LB_SQUARE_392_CTP, ...) the controller is
+      registered as LVGL's pointer input, rotation included. Buttons, sliders
+      and scrolling work with no input code in the sketch.
     • A flat, high-contrast style sheet (LB_Style) instead of LVGL's stock
       gradients and shadows.
 
@@ -40,6 +43,11 @@
 
 #include <Arduino.h>
 #include <LonelyBinaryDisplay.h>
+// Touch drivers register themselves when included (see LB_Touch.h). Every
+// LVGL sketch gets them, so a touch panel just works; a sketch without LVGL
+// that never includes them does not pay for Wire.
+#include <LB_TouchGT911.h>
+#include <LB_TouchXPT2046.h>
 
 #include "lvgl/lvgl.h"
 #include "LB_Styles.h"
@@ -59,10 +67,15 @@ class LB_LVGL_Class {
   void loop();
 
   lv_display_t *display() const { return _disp; }
+
+  // LVGL's pointer input for the panel's touch controller, or nullptr when the
+  // panel has none (or it did not answer — begin() on the display says which).
+  lv_indev_t *touch() const { return _indev; }
   bool usingFramebuffer() const { return _direct; }
 
  private:
   lv_display_t *_disp = nullptr;
+  lv_indev_t   *_indev = nullptr;
   void         *_buf  = nullptr;
   bool          _direct = false;
 };

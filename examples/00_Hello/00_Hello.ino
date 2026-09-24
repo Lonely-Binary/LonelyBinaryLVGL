@@ -1,11 +1,20 @@
 /*
-  HelloLVGL — a live LVGL gauge and readout on a Lonely Binary screen.
+  00_Hello — a live LVGL gauge and readout on a Lonely Binary screen.
+
+  The first of a series that goes from here to a full settings app, one idea
+  per example. Start at 00 and go in order; each one assumes the ones before.
+
+  YOU WILL LEARN
+    - the four lines every LVGL sketch here starts with
+    - that LVGL owns the screen: you create objects, it draws them
+    - that loop() must call LB_LVGL.loop() often, or nothing moves
 
   Nothing to configure. No lv_conf.h to copy, no flush callback to write.
 
   TO USE A DIFFERENT SCREEN, CHANGE ONE LINE — the LB_* constant below:
       LB_TFT_096  LB_TFT_18  LB_TFT_20  LB_TFT_24  LB_TFT_28  LB_TFT_35
       LB_NARROW_114  LB_NARROW_168  LB_NARROW_19  LB_NARROW_225  LB_NARROW_279
+      LB_SQUARE_392_CTP  (touch)
 
   Tools > Board: "ESP32S3 Dev Module" or "ESP32 Dev Module".
   On a board with PSRAM, also set Tools > PSRAM to Enabled — display.begin(true)
@@ -23,11 +32,10 @@ void setup() {
   Serial.begin(115200);
   delay(300);
 
-  // true asks for a PSRAM framebuffer. It falls back cleanly, so it is safe
-  // to ask for on a board without PSRAM — you just get partial rendering.
-  if (!display.begin(true)) {
-    display.begin();          // no PSRAM: partial buffers instead
-  }
+  // true asks for a framebuffer. Without the room for one (no PSRAM) it says
+  // so and carries on without, and LVGL renders in bands instead - so it is
+  // always safe to ask.
+  display.begin(true);
   if (!LB_LVGL.begin(display)) {
     Serial.println("LVGL failed to start");
     return;
