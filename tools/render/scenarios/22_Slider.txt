@@ -1,0 +1,10 @@
+# drag brightness to ~40%, volume down
+wait 300
+press 225 128
+drag 110 128 300
+release
+press 297 150
+drag 297 260 300
+release
+wait 200
+shot main

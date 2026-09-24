@@ -1,0 +1,10 @@
+wait 3000
+shot main
+# drag the knob round to ~26 C, pick Cool
+press 42 222
+drag 160 16 400
+drag 250 60 300
+release
+tap 200 293
+wait 2500
+shot changed

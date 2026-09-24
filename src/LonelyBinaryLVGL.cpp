@@ -25,6 +25,20 @@ static void lb_flush_cb(lv_display_t *disp, const lv_area_t *area,
   lv_display_flush_ready(disp);
 }
 
+static void lb_touch_cb(lv_indev_t *, lv_indev_data_t *data) {
+  int16_t x, y;
+  LB_Touch *t = s_display ? s_display->touch() : nullptr;
+  if (t && t->getTouch(&x, &y)) {
+    data->point.x = x;
+    data->point.y = y;
+    data->state = LV_INDEV_STATE_PRESSED;
+  } else {
+    // LVGL keeps the last point on release, which is what it wants: the
+    // click lands where the finger left.
+    data->state = LV_INDEV_STATE_RELEASED;
+  }
+}
+
 bool LB_LVGL_Class::begin(LB_Display &display, uint16_t partialLines) {
   if (_disp) return true;
   if (!display.begun()) {
@@ -63,7 +77,28 @@ bool LB_LVGL_Class::begin(LB_Display &display, uint16_t partialLines) {
                            LV_DISPLAY_RENDER_MODE_PARTIAL);
   }
 
+  if (display.touch()) {
+    _indev = lv_indev_create();
+    lv_indev_set_type(_indev, LV_INDEV_TYPE_POINTER);
+    lv_indev_set_read_cb(_indev, lb_touch_cb);
+    lv_indev_set_display(_indev, _disp);
+  }
+
   LB_Style::begin();
+
+  // LVGL's default theme is light. On the house dark background every widget
+  // the sketch does not style itself - buttons, sliders, switches, lists -
+  // came out as light boxes with dark text on a dark page. The same theme in
+  // dark mode, with the house accent as its primary colour, makes every stock
+  // widget match LB_Style without any per-widget styling.
+  lv_theme_t *th = lv_theme_default_init(_disp, LB_Style::accent, LB_Style::warn,
+                                         true, LV_FONT_DEFAULT);
+  lv_display_set_theme(_disp, th);
+  lv_obj_set_style_bg_color(lv_screen_active(), LB_Style::bg, 0);
+  // The top layer (status bars, toasts, anything above every screen) is not
+  // themed - applying the theme would make it opaque and hide the screen - so
+  // it has no text colour of its own and labels on it came out black.
+  lv_obj_set_style_text_color(lv_layer_top(), LB_Style::text, 0);
   return true;
 }
 

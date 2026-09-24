@@ -1,0 +1,10 @@
+wait 300
+shot home
+tap 85 110
+wait 600
+shot detail
+press 60 200
+drag 300 200 150
+release
+wait 700
+shot back
