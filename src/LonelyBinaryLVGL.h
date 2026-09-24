@@ -47,6 +47,7 @@
 // LVGL sketch gets them, so a touch panel just works; a sketch without LVGL
 // that never includes them does not pay for Wire.
 #include <LB_TouchGT911.h>
+#include <LB_TouchXPT2046.h>
 
 #include "lvgl/lvgl.h"
 #include "LB_Styles.h"

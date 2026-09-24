@@ -32,14 +32,20 @@ class LB_Display {
     g_h = rot ? _p->width : _p->height;
     _rot = _p->rotation;
     g_fb = (uint16_t *)calloc((size_t)g_w * g_h, 2);
+    // A real panel keeps whatever the last program drew. Start from red so a
+    // screen LVGL does not paint completely shows up instead of hiding as black.
+    for (int i = 0; i < g_w * g_h; i++) g_fb[i] = 0xF800;
     if (_p->touch != LB_TOUCH_NONE) { _touch = new LB_SimTouch(); _touch->begin(); }
     return true;
   }
   bool begun() const { return g_fb != nullptr; }
   int16_t width() const { return g_w; }
   int16_t height() const { return g_h; }
-  bool hasCanvas() const { return true; }
-  uint16_t *framebuffer() const { return g_fb; }
+  // LB_RENDER_PARTIAL=1: behave like a board without PSRAM - no framebuffer
+  // for LVGL, which then renders in bands and pushes each through pushImage().
+  bool hasCanvas() const { return !partial(); }
+  uint16_t *framebuffer() const { return partial() ? nullptr : g_fb; }
+  static bool partial() { const char *e = getenv("LB_RENDER_PARTIAL"); return e && *e == '1'; }
   void flush() {}
   void pushImage(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *px) {
     for (int r = 0; r < h; r++)
