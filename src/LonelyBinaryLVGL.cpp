@@ -11,7 +11,12 @@ static uint32_t lb_tick_cb() { return millis(); }
 static void lb_flush_cb(lv_display_t *disp, const lv_area_t *area,
                         uint8_t *px_map) {
   if (s_display) {
-    if (s_display->hasCanvas()) {
+    if (s_display->framebuffer2()) {
+      // Double buffered (RGB boards): px_map is the buffer LVGL just finished.
+      // Show it at the next vertical blank; LVGL then draws into the other one
+      // and copies the changed areas across itself.
+      if (lv_display_flush_is_last(disp)) s_display->present((const uint16_t *)px_map);
+    } else if (s_display->hasCanvas()) {
       // Direct mode: LVGL has already written into the panel's own
       // framebuffer, so there is nothing to copy — we only have to push the
       // finished frame. Doing that on every sub-area would send the whole
@@ -58,7 +63,12 @@ bool LB_LVGL_Class::begin(LB_Display &display, uint16_t partialLines) {
   lv_display_set_flush_cb(_disp, lb_flush_cb);
 
   uint16_t *fb = display.framebuffer();
-  if (fb) {
+  uint16_t *fb2 = display.framebuffer2();
+  if (fb && fb2) {
+    // Two buffers, swapped at the vertical blank: no half-drawn frames.
+    _direct = true;
+    lv_display_set_buffers(_disp, fb, fb2, (uint32_t)w * h * 2, LV_DISPLAY_RENDER_MODE_DIRECT);
+  } else if (fb) {
     // Zero-copy: LVGL's draw buffer IS the panel's framebuffer.
     _direct = true;
     lv_display_set_buffers(_disp, fb, nullptr, (uint32_t)w * h * 2,
