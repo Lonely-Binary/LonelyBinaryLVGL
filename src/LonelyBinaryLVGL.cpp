@@ -11,7 +11,12 @@ static uint32_t lb_tick_cb() { return millis(); }
 static void lb_flush_cb(lv_display_t *disp, const lv_area_t *area,
                         uint8_t *px_map) {
   if (s_display) {
-    if (s_display->hasCanvas()) {
+    if (s_display->framebuffer2()) {
+      // Double buffered (RGB boards): px_map is the buffer LVGL just finished.
+      // Show it at the next vertical blank; LVGL then draws into the other one
+      // and copies the changed areas across itself.
+      if (lv_display_flush_is_last(disp)) s_display->present((const uint16_t *)px_map);
+    } else if (s_display->hasCanvas()) {
       // Direct mode: LVGL has already written into the panel's own
       // framebuffer, so there is nothing to copy — we only have to push the
       // finished frame. Doing that on every sub-area would send the whole
@@ -23,6 +28,20 @@ static void lb_flush_cb(lv_display_t *disp, const lv_area_t *area,
     }
   }
   lv_display_flush_ready(disp);
+}
+
+static void lb_touch_cb(lv_indev_t *, lv_indev_data_t *data) {
+  int16_t x, y;
+  LB_Touch *t = s_display ? s_display->touch() : nullptr;
+  if (t && t->getTouch(&x, &y)) {
+    data->point.x = x;
+    data->point.y = y;
+    data->state = LV_INDEV_STATE_PRESSED;
+  } else {
+    // LVGL keeps the last point on release, which is what it wants: the
+    // click lands where the finger left.
+    data->state = LV_INDEV_STATE_RELEASED;
+  }
 }
 
 bool LB_LVGL_Class::begin(LB_Display &display, uint16_t partialLines) {
@@ -44,7 +63,12 @@ bool LB_LVGL_Class::begin(LB_Display &display, uint16_t partialLines) {
   lv_display_set_flush_cb(_disp, lb_flush_cb);
 
   uint16_t *fb = display.framebuffer();
-  if (fb) {
+  uint16_t *fb2 = display.framebuffer2();
+  if (fb && fb2) {
+    // Two buffers, swapped at the vertical blank: no half-drawn frames.
+    _direct = true;
+    lv_display_set_buffers(_disp, fb, fb2, (uint32_t)w * h * 2, LV_DISPLAY_RENDER_MODE_DIRECT);
+  } else if (fb) {
     // Zero-copy: LVGL's draw buffer IS the panel's framebuffer.
     _direct = true;
     lv_display_set_buffers(_disp, fb, nullptr, (uint32_t)w * h * 2,
@@ -63,7 +87,28 @@ bool LB_LVGL_Class::begin(LB_Display &display, uint16_t partialLines) {
                            LV_DISPLAY_RENDER_MODE_PARTIAL);
   }
 
+  if (display.touch()) {
+    _indev = lv_indev_create();
+    lv_indev_set_type(_indev, LV_INDEV_TYPE_POINTER);
+    lv_indev_set_read_cb(_indev, lb_touch_cb);
+    lv_indev_set_display(_indev, _disp);
+  }
+
   LB_Style::begin();
+
+  // LVGL's default theme is light. On the house dark background every widget
+  // the sketch does not style itself - buttons, sliders, switches, lists -
+  // came out as light boxes with dark text on a dark page. The same theme in
+  // dark mode, with the house accent as its primary colour, makes every stock
+  // widget match LB_Style without any per-widget styling.
+  lv_theme_t *th = lv_theme_default_init(_disp, LB_Style::accent, LB_Style::warn,
+                                         true, LV_FONT_DEFAULT);
+  lv_display_set_theme(_disp, th);
+  lv_obj_set_style_bg_color(lv_screen_active(), LB_Style::bg, 0);
+  // The top layer (status bars, toasts, anything above every screen) is not
+  // themed - applying the theme would make it opaque and hide the screen - so
+  // it has no text colour of its own and labels on it came out black.
+  lv_obj_set_style_text_color(lv_layer_top(), LB_Style::text, 0);
   return true;
 }
 

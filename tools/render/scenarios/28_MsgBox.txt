@@ -1,0 +1,4 @@
+wait 300
+tap 160 295
+wait 400
+shot ask

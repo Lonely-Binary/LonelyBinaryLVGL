@@ -1,0 +1,15 @@
+# + three times, - once -> 2; then toggle the lamp on
+wait 500
+tap 230 150
+tap 230 150
+tap 230 150
+tap 80 150
+tap 160 276
+wait 300
+shot after_taps
+# hold reset for 700 ms -> 0
+press 160 213
+wait 700
+release
+wait 300
+shot after_reset

@@ -1,0 +1,5 @@
+wait 300
+shot root
+tap 100 36
+wait 500
+shot wifi
