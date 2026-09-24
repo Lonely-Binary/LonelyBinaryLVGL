@@ -1,0 +1,10 @@
+wait 500
+shot home
+tap 160 296
+wait 500
+shot stats
+press 250 150
+drag 60 150 200
+release
+wait 600
+shot settings

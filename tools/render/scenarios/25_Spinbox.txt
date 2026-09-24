@@ -1,0 +1,11 @@
+# three taps on +, then hold - for a second
+wait 300
+tap 250 160
+tap 250 160
+tap 250 160
+shot plus
+press 70 160
+wait 1500
+release
+wait 400
+shot held

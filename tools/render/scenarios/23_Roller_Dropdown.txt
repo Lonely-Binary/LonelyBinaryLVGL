@@ -1,0 +1,12 @@
+# open dropdown, pick the 3rd item; spin the hours roller up by a flick
+wait 300
+tap 160 28
+wait 300
+shot open
+tap 160 120
+wait 300
+press 130 210
+drag 130 150 200
+release
+wait 1200
+shot main
