@@ -87,6 +87,7 @@ static void lb_touch_cb(lv_indev_t *, lv_indev_data_t *data) {
 
 bool LB_LVGL_Class::begin(LB_Display &display, uint16_t partialLines) { return begin(display, partialLines, 0); }
 uint16_t LB_LVGL_Class::rotation() const { return s_rotation; }
+const uint16_t *LB_LVGL_Class::shown() const { return s_rotation ? s_front : nullptr; }
 
 bool LB_LVGL_Class::begin(LB_Display &display, uint16_t partialLines, uint16_t rotation) {
   if (_disp) return true;
