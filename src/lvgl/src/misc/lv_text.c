@@ -283,8 +283,11 @@ static uint32_t lv_text_get_next_word(const char * txt, const lv_font_t * font,
             word_len--;
             break;
         }
-        else if(lv_text_is_a_word(letter_next) || lv_text_is_a_word(letter)) {
-            /*Found a word for single letter, usually true for CJK*/
+        else if((lv_text_is_a_word(letter_next) || lv_text_is_a_word(letter))
+                && !lv_text_no_line_start(letter_next) && !lv_text_no_line_end(letter)) {
+            /*Found a word for single letter, usually true for CJK.
+             *Lonely Binary: but not between a character and the closing punctuation after it, nor between
+             *opening punctuation and the character after it (lv_text_private.h), so they wrap together.*/
             *word_w_ptr = cur_w;
             i = i_next;
             break;
