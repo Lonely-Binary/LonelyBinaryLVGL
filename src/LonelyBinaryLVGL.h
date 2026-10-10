@@ -68,6 +68,9 @@ class LB_LVGL_Class {
   bool begin(LB_Display &display, uint16_t partialLines, uint16_t rotation);
   /** The rotation in use: 0, 90 or 270. */
   uint16_t rotation() const;
+  /** The panel buffer on show, when rotating (LVGL then draws into a frame of its own, so which of the panel's two buffers is
+   *  shown is not LVGL's active buffer); nullptr when not rotating. */
+  const uint16_t *shown() const;
 
   // Run LVGL's timers and redraw. Call this every time round loop(); it
   // returns quickly when there is nothing to do.
