@@ -123,7 +123,9 @@
 #define LV_USE_FFMPEG 0
 #define LV_USE_SVG 0
 #define LV_USE_BARCODE 0
+#ifndef LV_USE_TINY_TTF   /* a build may switch it on: -DLV_USE_TINY_TTF=1 */
 #define LV_USE_TINY_TTF 0
+#endif
 #define LV_USE_FREETYPE 0
 
 /*====================

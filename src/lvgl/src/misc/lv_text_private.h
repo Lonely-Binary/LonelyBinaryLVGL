@@ -212,6 +212,47 @@ static inline bool lv_text_is_a_word(uint32_t letter)
     return false;
 }
 
+/* Lonely Binary: CJK line-breaking rules (kinsoku). LVGL lets a line break before any CJK character, punctuation
+ * included, so a line could begin with a comma or end with an opening bracket. lv_text_get_next_word() asks these. */
+
+/**
+ * Test if a character may not begin a line: closing punctuation, which stays with the character before it.
+ * @param letter a letter
+ * @return true: no line break before 'letter'
+ */
+static inline bool lv_text_no_line_start(uint32_t letter)
+{
+    switch(letter) {
+        case 0x3001: case 0x3002:                          /* 、 。 */
+        case 0xFF0C: case 0xFF0E: case 0xFF1A: case 0xFF1B: /* ， ． ： ； */
+        case 0xFF01: case 0xFF1F: case 0xFF05:             /* ！ ？ ％ */
+        case 0xFF09: case 0x3009: case 0x300B: case 0x300D: case 0x300F: case 0x3011: case 0x3015: case 0x3017: /* ） 〉 》 」 』 】 〕 〗 */
+        case 0xFF3D: case 0xFF5D:                          /* ］ ｝ */
+        case 0x2019: case 0x201D:                          /* ’ ” */
+        case 0x2026: case 0x2014: case 0x00B7: case 0x30FB: /* … — · ・ */
+            return true;
+        default:
+            return false;
+    }
+}
+
+/**
+ * Test if a character may not end a line: opening punctuation, which stays with the character after it.
+ * @param letter a letter
+ * @return true: no line break after 'letter'
+ */
+static inline bool lv_text_no_line_end(uint32_t letter)
+{
+    switch(letter) {
+        case 0xFF08: case 0x3008: case 0x300A: case 0x300C: case 0x300E: case 0x3010: case 0x3014: case 0x3016: /* （ 〈 《 「 『 【 〔 〖 */
+        case 0xFF3B: case 0xFF5B:                          /* ［ ｛ */
+        case 0x2018: case 0x201C:                          /* ‘ “ */
+            return true;
+        default:
+            return false;
+    }
+}
+
 /**
  * Test if character can be treated as marker, and don't need to be rendered.
  * Note, this is not a full list. Add your findings to the list.
