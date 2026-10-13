@@ -61,15 +61,16 @@ class LB_LVGL_Class {
   // nothing at all. Without one, LVGL falls back to a partial buffer of
   // `partialLines` rows, which still works but pushes every band over SPI.
   bool begin(LB_Display &display, uint16_t partialLines = 40);
-  // The same, with the picture turned: `rotation` is 0, 90 or 270 (degrees clockwise). On a double-buffered RGB panel
-  // (no MADCTL to turn the picture) LVGL draws a portrait-sized frame and every finished frame is turned into the
-  // panel's other buffer before it is shown; touch points are turned back. lv_display_get_horizontal_resolution() is
+  // The same, with the picture turned: `rotation` is 0, 90 or 270 (degrees clockwise). On an RGB panel (no MADCTL to
+  // turn the picture) LVGL draws a portrait-sized frame of its own. A double-buffered panel gets every finished frame
+  // turned into its other buffer before it is shown; a single-buffer (directScan) panel gets each changed rectangle turned
+  // straight into the buffer it scans out. Touch points are turned back. lv_display_get_horizontal_resolution() is
   // then the panel's height. Boards that cannot do it ignore `rotation` and say so on Serial.
   bool begin(LB_Display &display, uint16_t partialLines, uint16_t rotation);
   /** The rotation in use: 0, 90 or 270. */
   uint16_t rotation() const;
   /** The panel buffer on show, when rotating (LVGL then draws into a frame of its own, so which of the panel's two buffers is
-   *  shown is not LVGL's active buffer); nullptr when not rotating. */
+   *  shown is not LVGL's active buffer; on a single-buffer panel it is that buffer); nullptr when not rotating. */
   const uint16_t *shown() const;
 
   // Run LVGL's timers and redraw. Call this every time round loop(); it

@@ -33,9 +33,34 @@ static void lb_rotate(const uint16_t *src, uint16_t *dst) {
     }
 }
 
+// The same turn for one rectangle of LVGL's frame, written into the panel's single framebuffer (a directScan panel scans the one buffer
+// it has, so there is no back buffer to prepare: the changed rectangle is turned in place, and only that).
+static void lb_rotate_area(const uint16_t *src, uint16_t *dst, const lv_area_t *a) {
+  const int32_t lx1 = a->x1 < 0 ? 0 : a->x1, ly1 = a->y1 < 0 ? 0 : a->y1;
+  const int32_t lx2 = a->x2 >= s_lw ? s_lw - 1 : a->x2, ly2 = a->y2 >= s_lh ? s_lh - 1 : a->y2;
+  if (lx2 < lx1 || ly2 < ly1) return;
+  if (s_rotation == 90) {
+    // panel (x, y) = logical (y, pw-1-x): the panel rows are the logical columns
+    for (int32_t y = lx1; y <= lx2; y++) {
+      uint16_t *d = dst + (size_t)y * s_pw;
+      for (int32_t x = s_pw - 1 - ly2; x <= s_pw - 1 - ly1; x++) d[x] = src[(size_t)(s_pw - 1 - x) * s_lw + y];
+    }
+  } else {
+    // panel (x, y) = logical (lw-1-y, x)
+    for (int32_t y = s_lw - 1 - lx2; y <= s_lw - 1 - lx1; y++) {
+      uint16_t *d = dst + (size_t)y * s_pw;
+      for (int32_t x = ly1; x <= ly2; x++) d[x] = src[(size_t)x * s_lw + (s_lw - 1 - y)];
+    }
+  }
+}
+
 static void lb_flush_cb(lv_display_t *disp, const lv_area_t *area,
                         uint8_t *px_map) {
-  if (s_display && s_rotation) {
+  if (s_display && s_rotation && !s_display->framebuffer2()) {
+    // One scanned buffer (4.3-inch directScan panel): turn what changed straight into it, then write the cache back once per frame.
+    lb_rotate_area((const uint16_t *)px_map, s_display->framebuffer(), area);
+    if (lv_display_flush_is_last(disp)) s_display->flush();
+  } else if (s_display && s_rotation) {
     if (lv_display_flush_is_last(disp)) {
       uint16_t *back = s_front == s_display->framebuffer() ? s_display->framebuffer2() : s_display->framebuffer();
       const uint32_t t0 = micros();
@@ -106,13 +131,13 @@ bool LB_LVGL_Class::begin(LB_Display &display, uint16_t partialLines, uint16_t r
   s_rotation = 0;
   uint16_t *fb = display.framebuffer();
   uint16_t *fb2 = display.framebuffer2();
-  if ((rotation == 90 || rotation == 270) && fb && fb2) {
-    // A portrait frame for LVGL, in PSRAM; the panel's two buffers stay as they are.
+  if ((rotation == 90 || rotation == 270) && fb) {
+    // A portrait frame for LVGL, in PSRAM; the panel's buffer (or its two buffers) stay as they are.
     s_rot = (uint16_t *)heap_caps_malloc((size_t)w * h * 2, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (s_rot) { memset(s_rot, 0, (size_t)w * h * 2); s_rotation = rotation; s_front = fb; const int32_t t = w; w = h; h = t; }
     else Serial.println(F("[LB_LVGL] no room for a rotated frame: showing the screen upright."));
   } else if (rotation) {
-    Serial.println(F("[LB_LVGL] rotation needs a double-buffered RGB panel: showing the screen upright."));
+    Serial.println(F("[LB_LVGL] rotation needs an RGB panel with a framebuffer: showing the screen upright."));
   }
   s_lw = w; s_lh = h;
 
